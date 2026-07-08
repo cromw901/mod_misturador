@@ -26,20 +26,20 @@
 (function () {
 
   // ---------- Funções auxiliares de baixo nível ----------
-  // Não dependemos de helpers que podem não existir em toda versão;
-  // usamos pixelMap/pixels diretamente, que são o "chão" da engine.
+  // A engine do Sandboxels já expõe essas funções globalmente:
+  // isEmpty(x,y), outOfBounds(x,y), pixelMap[x][y] (o pixel em si,
+  // não um índice), createPixel(elemento,x,y) e changePixel(pixel,elemento).
+  // Só envolvemos numa checagem de limites extra por segurança.
 
   function sbxGetPixel(x, y) {
-    if (x < 0 || y < 0 || typeof pixelMap[x] === "undefined" || typeof pixelMap[x][y] === "undefined") return null;
-    var idx = pixelMap[x][y];
-    if (idx === -1 || idx === null || typeof pixels[idx] === "undefined") return null;
-    return pixels[idx];
+    if (typeof outOfBounds === "function" && outOfBounds(x, y)) return null;
+    var p = pixelMap[x] ? pixelMap[x][y] : null;
+    return p || null;
   }
 
   function sbxIsEmpty(x, y) {
-    if (x < 0 || y < 0 || typeof pixelMap[x] === "undefined" || typeof pixelMap[x][y] === "undefined") return false;
-    var idx = pixelMap[x][y];
-    return idx === -1 || idx === null || typeof pixels[idx] === "undefined";
+    if (typeof outOfBounds === "function" && outOfBounds(x, y)) return false;
+    return isEmpty(x, y);
   }
 
   // ---------- Sistema de receitas ----------
