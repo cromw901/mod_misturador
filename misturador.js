@@ -90,45 +90,56 @@
     desc: "Só solta a mistura se dois ingredientes diferentes formarem uma receita válida. Se não combinarem, ficam presos em cima — nada passa por acidente.",
 
     tick: function (pixel) {
-      // Só faz alguma coisa se a saída (embaixo) estiver livre
-      if (!sbxIsEmpty(pixel.x, pixel.y + 1)) return;
+      // Tudo dentro de um try/catch: se algo der errado (função da engine
+      // com nome diferente, versão do jogo diferente, etc.) o mod só avisa
+      // no console em vez de travar o jogo inteiro.
+      try {
+        // Só faz alguma coisa se a saída (embaixo) estiver livre
+        if (!sbxIsEmpty(pixel.x, pixel.y + 1)) return;
 
-      // Olha as 3 células logo acima do misturador (esquerda, centro, direita)
-      var achados = {};
-      for (var dx = -1; dx <= 1; dx++) {
-        var p = sbxGetPixel(pixel.x + dx, pixel.y - 1);
-        if (p && p.element !== "empty" && p.element !== "misturador") {
-          if (!achados[p.element]) achados[p.element] = [];
-          achados[p.element].push(p);
-        }
-      }
-
-      var tipos = Object.keys(achados);
-      if (tipos.length < 2) return; // precisa de pelo menos 2 ingredientes diferentes
-
-      // Testa cada combinação possível dos ingredientes encontrados
-      for (var i = 0; i < tipos.length; i++) {
-        for (var j = i + 1; j < tipos.length; j++) {
-          var resultado = getMixerRecipe(tipos[i], tipos[j]);
-          if (resultado && elements[resultado]) {
-            var pixelA = achados[tipos[i]][0];
-            var pixelB = achados[tipos[j]][0];
-
-            // Consome os dois ingredientes
-            changePixel(pixelA, "empty");
-            changePixel(pixelB, "empty");
-
-            // Libera o resultado por baixo do misturador
-            createPixel(resultado, pixel.x, pixel.y + 1);
-
-            // Um pequeno aquecimento pra dar "vida" ao processo (opcional)
-            pixel.temp = (pixel.temp || 20) + 2;
-            return;
+        // Olha as 3 células logo acima do misturador (esquerda, centro, direita)
+        var achados = {};
+        for (var dx = -1; dx <= 1; dx++) {
+          var p = sbxGetPixel(pixel.x + dx, pixel.y - 1);
+          if (p && p.element !== "empty" && p.element !== "misturador") {
+            if (!achados[p.element]) achados[p.element] = [];
+            achados[p.element].push(p);
           }
         }
+
+        var tipos = Object.keys(achados);
+        if (tipos.length < 2) return; // precisa de pelo menos 2 ingredientes diferentes
+
+        // Testa cada combinação possível dos ingredientes encontrados
+        for (var i = 0; i < tipos.length; i++) {
+          for (var j = i + 1; j < tipos.length; j++) {
+            var resultado = getMixerRecipe(tipos[i], tipos[j]);
+            if (resultado && elements[resultado]) {
+              var pixelA = achados[tipos[i]][0];
+              var pixelB = achados[tipos[j]][0];
+
+              // Consome os dois ingredientes
+              changePixel(pixelA, "empty");
+              changePixel(pixelB, "empty");
+
+              // Libera o resultado por baixo do misturador
+              createPixel(resultado, pixel.x, pixel.y + 1);
+
+              // Um pequeno aquecimento pra dar "vida" ao processo (opcional)
+              pixel.temp = (pixel.temp || 20) + 2;
+              return;
+            }
+          }
+        }
+        // Se chegou aqui, os ingredientes não combinam entre si —
+        // eles continuam parados em cima do bloco, sem passar.
+      } catch (erro) {
+        // Loga só uma vez pra não spammar o console
+        if (!elements.misturador._avisado) {
+          console.warn("[Misturador] erro no tick, mod pausado nesse pixel:", erro);
+          elements.misturador._avisado = true;
+        }
       }
-      // Se chegou aqui, os ingredientes não combinam entre si —
-      // eles continuam parados em cima do bloco, sem passar.
     }
   };
 
